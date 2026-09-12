@@ -1,0 +1,77 @@
+:root {
+  --paper: #FFFFFF;
+  --ink: #141414;
+  --accent: #0033A0;
+  --muted: #83807A;
+  --line: #DAD6CB;
+  --alt-bg: #F2F2F0;
+  --body-text: #3A3833;
+  --muted-2: #B9B4A6;
+  --dim: #5C5A54;
+  --footer-line: #2A2A2A;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Archivo', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: #00246e; }
+.mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 40px; }
+.rule { border: none; border-top: 1px solid var(--line); margin: 0; }
+
+.nav-link { position: relative; color: var(--ink); font-size: 15px; font-weight: 500; }
+.nav-link::after { content: ''; position: absolute; left: 0; bottom: -5px; width: 0; height: 2px; background: var(--accent); transition: width .25s ease; }
+.nav-link:hover::after { width: 100%; }
+
+.btn { transition: transform .25s ease, box-shadow .25s ease, background .25s ease; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(20,20,20,0.35); }
+.btn svg { transition: transform .25s ease; }
+.btn:hover svg { transform: translateX(4px); }
+
+/* Schwebender CTA-Button, blendet nach dem Scrollen ein */
+.floating-cta {
+  position: fixed; left: 24px; bottom: 24px; z-index: 60;
+  opacity: 0; transform: translateY(16px); pointer-events: none;
+  transition: opacity .3s ease, transform .3s ease;
+}
+.floating-cta.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track { animation: marquee 28s linear infinite; }
+.marquee-track:hover { animation-play-state: paused; }
+
+/* Scroll-Reveal */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.2,.65,.3,1), transform .8s cubic-bezier(.2,.65,.3,1); }
+.reveal.in-view { opacity: 1; transform: translateY(0); }
+
+.case-card { transition: box-shadow .35s ease; }
+.case-card:hover { box-shadow: 0 20px 44px -22px rgba(20,20,20,0.35); }
+.case-media { overflow: hidden; transition: transform .5s cubic-bezier(.2,.7,.3,1); }
+.case-card:hover .case-media { transform: scale(1.015); }
+
+/* FAQ-Akkordeon (native <details>/<summary>, kein JS nötig) */
+details.faq-item { border-top: 1px solid var(--line); padding: 22px 0; }
+details.faq-item summary {
+  list-style: none; cursor: pointer; display: flex; justify-content: space-between;
+  align-items: center; gap: 16px; font-weight: 700; font-size: 18px;
+}
+details.faq-item summary::-webkit-details-marker { display: none; }
+details.faq-item summary::after {
+  content: '+'; font-family: 'IBM Plex Mono', monospace; color: var(--accent);
+  font-size: 22px; width: 20px; text-align: center; flex-shrink: 0;
+}
+details.faq-item[open] summary::after { content: '–'; }
+details.faq-item .faq-answer { color: var(--body-text); font-size: 15px; line-height: 1.6; margin-top: 14px; max-width: 640px; }
+
+@media (max-width: 860px) {
+  .wrap { padding: 0 20px; }
+  .stack-mobile { flex-direction: column !important; }
+  .hide-mobile { display: none !important; }
+}
