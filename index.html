@@ -7,7 +7,7 @@
   <meta name="description" content="Webdesign und Umsetzung für Handwerk, Gewerbe und KMU in Graubünden und St. Gallen.">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=75">
+  <link rel="stylesheet" href="styles.css?v=76">
 </head>
 <body>
 
@@ -65,33 +65,26 @@
     </div>
   </section>
 
-  <section id="ueber-mich" class="about">
-    <div class="about-wash" aria-hidden="true"></div>
-    <div class="about-compose">
-      <p class="about-edge mono" aria-hidden="true">GR · SG</p>
+  <section id="ueber-mich" class="about-feature">
+    <div class="about-feature-media">
+      <img
+        src="assets/about-luca.jpg"
+        alt="Luca Pally"
+        onerror="this.closest('.about-feature').classList.add('about-feature--missing'); this.remove();"
+      >
+    </div>
+    <div class="about-feature-overlay" aria-hidden="true"></div>
+    <p class="about-feature-edge mono" aria-hidden="true">GR · SG</p>
 
-      <div class="about-main">
-        <h2 class="about-mega">
-          <span class="about-mega-word" id="about-mega">Luca</span>
-        </h2>
-
-        <div class="about-panel reveal">
-          <p class="about-role">Freelance Webdesigner</p>
-          <p class="about-lead">Webdesign für Handwerk, Gewerbe und KMU — klar im Auftritt, nah am Betrieb.</p>
-          <div class="about-panel-foot">
-            <p class="about-place mono">Graubünden · St. Gallen</p>
-            <a class="about-cta btn" href="#kontakt" data-cursor="hover">Projekt besprechen <span aria-hidden="true">→</span></a>
-          </div>
-        </div>
+    <div class="about-feature-content">
+      <h2 class="about-feature-headline reveal">
+        Luca Pally baut Websites<br>
+        für Handwerk &amp; KMU.
+      </h2>
+      <div class="about-feature-foot reveal" style="transition-delay:.08s;">
+        <p class="about-feature-role mono">Freelance Webdesigner · Graubünden / St. Gallen</p>
+        <a class="about-feature-cta" href="#kontakt" data-cursor="hover">Projekt besprechen <span aria-hidden="true">→</span></a>
       </div>
-
-      <figure class="about-photo reveal" style="transition-delay:.12s;">
-        <img
-          src="assets/about-luca.jpg"
-          alt="Luca Pally"
-          onerror="this.parentElement.classList.add('about-photo--missing'); this.remove();"
-        >
-      </figure>
     </div>
   </section>
 
@@ -105,6 +98,6 @@
 
 </div>
 
-<script src="script.js?v=56"></script>
+<script src="script.js?v=57"></script>
 </body>
 </html>

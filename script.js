@@ -151,33 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('has-native-cursor');
   }
 
-  // About: Mega-Name folgt leicht der Maus
-  var aboutSection = document.querySelector('.about');
-  var aboutMega = document.getElementById('about-mega');
-  if (!reduceMotion && canFinePointer && aboutSection && aboutMega) {
-    var amx = 0;
-    var amy = 0;
-    var amtx = 0;
-    var amty = 0;
-    var rafAbout = null;
-    var tickAbout = function () {
-      amx += (amtx - amx) * 0.08;
-      amy += (amty - amy) * 0.08;
-      aboutMega.style.translate = (amx * 10) + 'px ' + (amy * 6) + 'px';
-      rafAbout = window.requestAnimationFrame(tickAbout);
-    };
-    aboutSection.addEventListener('mousemove', function (e) {
-      var rect = aboutSection.getBoundingClientRect();
-      amtx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-      amty = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-      if (!rafAbout) rafAbout = window.requestAnimationFrame(tickAbout);
-    }, { passive: true });
-    aboutSection.addEventListener('mouseleave', function () {
-      amtx = 0;
-      amty = 0;
-    });
-  }
-
   // Kontaktformular
   var contactForm = document.getElementById('contact-form');
   if (contactForm) {
