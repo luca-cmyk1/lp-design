@@ -1,5 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Sanftes, etwas langsameres Scrollen zu Abschnitten (ersetzt den abrupten nativen Sprung)
+  // Page-Load Intro — auf false setzen zum Reaktivieren
+  var INTRO_ENABLED = false;
+  var intro = document.getElementById('site-intro');
+  var hero = document.querySelector('.hero');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var startHero = function () {
+    document.body.classList.remove('is-intro');
+    if (hero) hero.classList.add('is-ready');
+  };
+  var removeIntro = function () {
+    if (!intro) return;
+    intro.classList.add('is-exit');
+    window.setTimeout(function () {
+      if (intro.parentNode) intro.parentNode.removeChild(intro);
+    }, 600);
+  };
+  if (!INTRO_ENABLED || reduceMotion || !intro) {
+    startHero();
+    if (intro) intro.style.display = 'none';
+  } else {
+    document.body.classList.add('is-intro');
+    // 1) dunkel leer  2) LP erscheint  3) Übergang zum Hero
+    window.setTimeout(function () { intro.classList.add('is-show'); }, 900);
+    window.setTimeout(function () {
+      intro.classList.add('is-bridge');
+      startHero();
+    }, 2200);
+    window.setTimeout(removeIntro, 3900);
+  }
+
+  // Sanftes Scrollen zu Abschnitten
   var easeInOutCubic = function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
   var smoothScrollTo = function (targetY, duration) {
     var startY = window.scrollY;
@@ -28,8 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Scroll-Reveal: Abschnitte faden beim Scrollen sanft ein
+  // Scroll-Reveal
   var revealEls = document.querySelectorAll('.reveal');
+  var photoStrip = document.querySelector('.photo-strip');
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
@@ -40,11 +71,24 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }, { threshold: 0.15 });
     revealEls.forEach(function (el) { io.observe(el); });
+
+    if (photoStrip) {
+      var stripIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            stripIo.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      stripIo.observe(photoStrip);
+    }
   } else {
     revealEls.forEach(function (el) { el.classList.add('in-view'); });
+    if (photoStrip) photoStrip.classList.add('is-visible');
   }
 
-  // Menü im Headerbild: wird fix am oberen Rand, sobald der Hero-Bereich wegscrollt
+  // Menü im Headerbild
   var heroNav = document.querySelector('.hero-nav');
   var heroSection = document.querySelector('.hero');
   if (heroNav && heroSection) {
@@ -62,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     onNavScroll();
 
-    // Angeklickter Menüpunkt wird als aktive schwarze Pill markiert
     var heroNavLinks = heroNav.querySelectorAll('.nav-link');
     heroNavLinks.forEach(function (link) {
       link.addEventListener('click', function () {
@@ -72,7 +115,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Kontaktformular: validiert und öffnet eine vorausgefüllte E-Mail (keine Backend-Anbindung nötig)
+  // Custom cursor + soft follower (Eliot-Referenz)
+  var cursor = document.getElementById('site-cursor');
+  var cursorDot = document.getElementById('site-cursor-dot');
+  var canFinePointer = window.matchMedia('(pointer: fine)').matches;
+  if (!reduceMotion && canFinePointer && cursor && cursorDot) {
+    var cx = window.innerWidth / 2;
+    var cy = window.innerHeight / 2;
+    var tx = cx;
+    var ty = cy;
+    var rafCursor = null;
+    var tickCursor = function () {
+      cx += (tx - cx) * 0.18;
+      cy += (ty - cy) * 0.18;
+      cursor.style.transform = 'translate3d(' + cx + 'px,' + cy + 'px,0)';
+      cursorDot.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0)';
+      rafCursor = window.requestAnimationFrame(tickCursor);
+    };
+    document.addEventListener('mousemove', function (e) {
+      tx = e.clientX;
+      ty = e.clientY;
+      cursor.classList.add('is-on');
+      cursorDot.classList.add('is-on');
+      if (!rafCursor) rafCursor = window.requestAnimationFrame(tickCursor);
+    }, { passive: true });
+    document.addEventListener('mouseleave', function () {
+      cursor.classList.remove('is-on');
+      cursorDot.classList.remove('is-on');
+    });
+    document.querySelectorAll('a, button, [data-cursor="hover"]').forEach(function (el) {
+      el.addEventListener('mouseenter', function () { cursor.classList.add('is-hover'); });
+      el.addEventListener('mouseleave', function () { cursor.classList.remove('is-hover'); });
+    });
+  } else {
+    document.body.classList.add('has-native-cursor');
+  }
+
+  // About: Mega-Name folgt leicht der Maus
+  var aboutSection = document.querySelector('.about');
+  var aboutMega = document.getElementById('about-mega');
+  if (!reduceMotion && canFinePointer && aboutSection && aboutMega) {
+    var amx = 0;
+    var amy = 0;
+    var amtx = 0;
+    var amty = 0;
+    var rafAbout = null;
+    var tickAbout = function () {
+      amx += (amtx - amx) * 0.08;
+      amy += (amty - amy) * 0.08;
+      aboutMega.style.translate = (amx * 10) + 'px ' + (amy * 6) + 'px';
+      rafAbout = window.requestAnimationFrame(tickAbout);
+    };
+    aboutSection.addEventListener('mousemove', function (e) {
+      var rect = aboutSection.getBoundingClientRect();
+      amtx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+      amty = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+      if (!rafAbout) rafAbout = window.requestAnimationFrame(tickAbout);
+    }, { passive: true });
+    aboutSection.addEventListener('mouseleave', function () {
+      amtx = 0;
+      amty = 0;
+    });
+  }
+
+  // Kontaktformular
   var contactForm = document.getElementById('contact-form');
   if (contactForm) {
     var CONTACT_EMAIL = '[DEINE E-MAIL]';
