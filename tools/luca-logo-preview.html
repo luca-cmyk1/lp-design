@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luca Logo Vorschau</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #EDEAE3;
+    --panel: #F4F1EA;
+    --line: #D9D4C8;
+    --ink: #141414;
+    --muted: #7A7668;
+    --gold: #B38B45;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: #1A1A1A; font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  header { padding: 28px 32px 8px; }
+  header h1 { margin: 0 0 6px; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); font-weight: 500; }
+  header p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 680px; }
+  .stage {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    margin: 24px 32px;
+    padding: 60px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  svg { max-width: 100%; height: auto; }
+  .note { margin: 0 32px 24px; font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 680px; }
+  footer { padding: 8px 32px 60px; font-size: 11px; color: var(--muted); line-height: 1.6; max-width: 680px; }
+  footer code { color: var(--gold); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Luca &mdash; handgezeichnete Vektorform, Entwurf 2</h1>
+  <p>Kein Font &mdash; ein von Hand gezeichneter Pfad (ein durchgehender Strich + Punkt), im Gestus deines Referenzbilds nachgebaut.</p>
+</header>
+
+<div class="stage">
+  <svg viewBox="0 0 800 400" width="700">
+    <path d="M120,195
+      L112,330
+      Q140,335 175,333
+      L185,260
+      Q195,330 222,330
+      L235,258
+      Q250,240 275,245
+      Q250,248 232,280
+      Q225,305 240,315
+      Q255,332 295,318
+      L310,300
+      Q290,310 298,318
+      Q300,338 315,332
+      Q335,328 342,322
+      Q348,310 344,298
+      Q335,280 322,284
+      L336,308
+      L350,336"
+      fill="none" stroke="#141414" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="395" cy="242" r="9" fill="#141414"/>
+  </svg>
+</div>
+
+<p class="note">
+  Das ist ein erster handgezeichneter Entwurf (gleichm&auml;ssige Strichst&auml;rke, noch nicht die druckvariable Pinseltextur deiner Referenz). Sag mir konkret, wo es noch nicht passt &mdash; Buchstabenformen, Winkel, Proportionen, Strichst&auml;rke &mdash; und ich zeichne den Pfad neu.
+</p>
+
+<footer>
+  Lokaler Entwurfs-Workspace &mdash; separat von der Haupt-Vorschau. Datei: <code>tools/luca-logo-preview.html</code>
+</footer>
+</body>
+</html>

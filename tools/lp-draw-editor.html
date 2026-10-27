@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LP Draw Editor</title>
+  <style>
+    :root {
+      --bg: #0B1310;
+      --panel: #141D18;
+      --line: #2A3830;
+      --ink: #F2ECDC;
+      --muted: #8C8671;
+      --gold: #B38B45;
+      --gold-light: #D8B876;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      background: var(--bg);
+      color: var(--ink);
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    aside {
+      border-right: 1px solid var(--line);
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--panel);
+    }
+    h1 {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      font-weight: 500;
+    }
+    p.hint {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .group { display: flex; flex-direction: column; gap: 8px; }
+    .group label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, select {
+      font: inherit;
+      font-size: 12px;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--gold); color: var(--gold-light); }
+    button.primary {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #141414;
+    }
+    button.primary:hover { background: var(--gold-light); border-color: var(--gold-light); }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    input[type="range"] { width: 100%; accent-color: var(--gold); }
+    .stroke-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 280px;
+      overflow: auto;
+    }
+    .stroke-list li {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 6px;
+      align-items: center;
+      border: 1px solid var(--line);
+      padding: 8px;
+      font-size: 11px;
+    }
+    .stroke-list li.active { border-color: var(--gold); }
+    .stroke-list button {
+      padding: 4px 6px;
+      font-size: 11px;
+      min-width: 28px;
+    }
+    main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-width: 0;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .toolbar strong { color: var(--ink); font-weight: 500; }
+    .stage-wrap {
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      min-height: 0;
+    }
+    .stage {
+      position: relative;
+      width: min(100%, 980px);
+      aspect-ratio: 1800 / 1083;
+      background: #050807;
+      border: 1px solid var(--line);
+      touch-action: none;
+      user-select: none;
+    }
+    .stage img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0.28;
+      pointer-events: none;
+    }
+    .stage svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .stage.drawing { cursor: crosshair; }
+    .stage.previewing { cursor: default; }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 12px 18px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      font: inherit;
+      font-size: 10px;
+      line-height: 1.4;
+      color: var(--ink);
+      background: #0B1310;
+      border: 1px solid var(--line);
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <div>
+      <h1>LP Draw Editor</h1>
+      <p class="hint" style="margin-top:10px;">
+        Zeichne die Linien in der Reihenfolge, wie sie animiert werden sollen.
+        Jeder Strich = ein Path. Danach Preview &amp; Export.
+      </p>
+    </div>
+
+    <div class="group">
+      <label>Modus</label>
+      <div class="row">
+        <button type="button" id="btn-draw" class="primary">Zeichnen</button>
+        <button type="button" id="btn-preview">Preview</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Strichstärke <span id="width-val">28</span></label>
+      <input type="range" id="stroke-width" min="8" max="80" value="28">
+    </div>
+
+    <div class="group">
+      <label>Guide-Opacity <span id="guide-val">28</span>%</label>
+      <input type="range" id="guide-opacity" min="5" max="80" value="28">
+    </div>
+
+    <div class="group">
+      <label>Striche</label>
+      <ul class="stroke-list" id="stroke-list"></ul>
+      <div class="row">
+        <button type="button" id="btn-undo">Undo</button>
+        <button type="button" id="btn-clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Export</label>
+      <div class="row">
+        <button type="button" id="btn-export" class="primary">JSON kopieren</button>
+        <button type="button" id="btn-svg">SVG laden</button>
+      </div>
+      <textarea id="export-out" readonly placeholder="Export erscheint hier…"></textarea>
+    </div>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <strong id="mode-label">Zeichnen</strong>
+      <span>·</span>
+      <span id="status">Strich starten: klicken &amp; ziehen</span>
+    </div>
+    <div class="stage-wrap">
+      <div class="stage drawing" id="stage">
+        <img id="guide" src="../assets/logo-lp-white.png" alt="LP Guide">
+        <svg id="draw-svg" viewBox="0 0 1800 1083" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+        <svg id="preview-svg" viewBox="0 0 1800 1083" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none;"></svg>
+      </div>
+    </div>
+    <footer>
+      Tipp: typisch L-Stamm → L-Fuss → P-Stamm → P-Bogen. Danach «JSON kopieren» und mir schicken.
+    </footer>
+  </main>
+
+  <script>
+(function () {
+  var VB_W = 1800;
+  var VB_H = 1083;
+  var stage = document.getElementById('stage');
+  var guide = document.getElementById('guide');
+  var drawSvg = document.getElementById('draw-svg');
+  var previewSvg = document.getElementById('preview-svg');
+  var strokeList = document.getElementById('stroke-list');
+  var exportOut = document.getElementById('export-out');
+  var statusEl = document.getElementById('status');
+  var modeLabel = document.getElementById('mode-label');
+  var widthInput = document.getElementById('stroke-width');
+  var widthVal = document.getElementById('width-val');
+  var guideInput = document.getElementById('guide-opacity');
+  var guideVal = document.getElementById('guide-val');
+
+  var strokes = [];
+  var activeIndex = -1;
+  var drawing = false;
+  var currentPoints = [];
+  var mode = 'draw';
+  var strokeWidth = 28;
+
+  function pointsToPath(points) {
+    if (!points.length) return '';
+    var d = 'M ' + points[0].x.toFixed(1) + ' ' + points[0].y.toFixed(1);
+    for (var i = 1; i < points.length; i++) {
+      d += ' L ' + points[i].x.toFixed(1) + ' ' + points[i].y.toFixed(1);
+    }
+    return d;
+  }
+
+  function simplify(points, minDist) {
+    if (points.length < 2) return points.slice();
+    var out = [points[0]];
+    for (var i = 1; i < points.length; i++) {
+      var prev = out[out.length - 1];
+      var dx = points[i].x - prev.x;
+      var dy = points[i].y - prev.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= minDist) out.push(points[i]);
+    }
+    var last = points[points.length - 1];
+    var end = out[out.length - 1];
+    if (end.x !== last.x || end.y !== last.y) out.push(last);
+    return out;
+  }
+
+  function pointerToSvg(e) {
+    var rect = stage.getBoundingClientRect();
+    var x = ((e.clientX - rect.left) / rect.width) * VB_W;
+    var y = ((e.clientY - rect.top) / rect.height) * VB_H;
+    return {
+      x: Math.min(VB_W, Math.max(0, x)),
+      y: Math.min(VB_H, Math.max(0, y))
+    };
+  }
+
+  function renderDraw() {
+    drawSvg.innerHTML = '';
+    strokes.forEach(function (stroke, i) {
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pointsToPath(stroke.points));
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', i === activeIndex ? '#D8B876' : '#F2ECDC');
+      path.setAttribute('stroke-width', String(stroke.width));
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('opacity', i === activeIndex ? '1' : '0.85');
+      drawSvg.appendChild(path);
+    });
+    if (currentPoints.length) {
+      var live = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      live.setAttribute('d', pointsToPath(currentPoints));
+      live.setAttribute('fill', 'none');
+      live.setAttribute('stroke', '#B38B45');
+      live.setAttribute('stroke-width', String(strokeWidth));
+      live.setAttribute('stroke-linecap', 'round');
+      live.setAttribute('stroke-linejoin', 'round');
+      drawSvg.appendChild(live);
+    }
+  }
+
+  function renderList() {
+    strokeList.innerHTML = '';
+    strokes.forEach(function (stroke, i) {
+      var li = document.createElement('li');
+      if (i === activeIndex) li.classList.add('active');
+      li.innerHTML =
+        '<span>Strich ' + (i + 1) + ' · ' + stroke.points.length + ' pts</span>' +
+        '<button type="button" data-up="' + i + '" title="Hoch">↑</button>' +
+        '<button type="button" data-down="' + i + '" title="Runter">↓</button>' +
+        '<button type="button" data-del="' + i + '" title="Löschen">×</button>';
+      li.addEventListener('click', function (ev) {
+        if (ev.target.closest('button')) return;
+        activeIndex = i;
+        renderList();
+        renderDraw();
+      });
+      strokeList.appendChild(li);
+    });
+  }
+
+  strokeList.addEventListener('click', function (e) {
+    var up = e.target.getAttribute('data-up');
+    var down = e.target.getAttribute('data-down');
+    var del = e.target.getAttribute('data-del');
+    if (up !== null) {
+      var iu = parseInt(up, 10);
+      if (iu > 0) {
+        var tmp = strokes[iu - 1];
+        strokes[iu - 1] = strokes[iu];
+        strokes[iu] = tmp;
+        activeIndex = iu - 1;
+      }
+    }
+    if (down !== null) {
+      var id = parseInt(down, 10);
+      if (id < strokes.length - 1) {
+        var tmp2 = strokes[id + 1];
+        strokes[id + 1] = strokes[id];
+        strokes[id] = tmp2;
+        activeIndex = id + 1;
+      }
+    }
+    if (del !== null) {
+      var ix = parseInt(del, 10);
+      strokes.splice(ix, 1);
+      activeIndex = Math.min(activeIndex, strokes.length - 1);
+    }
+    renderList();
+    renderDraw();
+  });
+
+  function setMode(next) {
+    mode = next;
+    stage.classList.toggle('drawing', mode === 'draw');
+    stage.classList.toggle('previewing', mode === 'preview');
+    drawSvg.style.display = mode === 'draw' ? 'block' : 'none';
+    previewSvg.style.display = mode === 'preview' ? 'block' : 'none';
+    modeLabel.textContent = mode === 'draw' ? 'Zeichnen' : 'Preview';
+    document.getElementById('btn-draw').classList.toggle('primary', mode === 'draw');
+    document.getElementById('btn-preview').classList.toggle('primary', mode === 'preview');
+    statusEl.textContent = mode === 'draw'
+      ? 'Strich starten: klicken & ziehen'
+      : 'Animation läuft — nochmals Preview zum Neustart';
+    if (mode === 'preview') playPreview();
+  }
+
+  function playPreview() {
+    previewSvg.innerHTML = '';
+    if (!strokes.length) {
+      statusEl.textContent = 'Noch keine Striche gezeichnet';
+      return;
+    }
+    var paths = [];
+    strokes.forEach(function (stroke) {
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pointsToPath(stroke.points));
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#F2ECDC');
+      path.setAttribute('stroke-width', String(stroke.width));
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      previewSvg.appendChild(path);
+      paths.push(path);
+    });
+
+    // measure lengths after in DOM
+    requestAnimationFrame(function () {
+      var durations = [];
+      var total = 0;
+      paths.forEach(function (path) {
+        var len = path.getTotalLength();
+        var dur = Math.max(0.35, len / 900);
+        durations.push({ path: path, len: len, dur: dur });
+        total += dur;
+      });
+      var t = 0;
+      durations.forEach(function (item) {
+        item.path.style.strokeDasharray = String(item.len);
+        item.path.style.strokeDashoffset = String(item.len);
+        item.path.style.animation = 'none';
+        // force reflow
+        void item.path.getBoundingClientRect();
+        item.path.style.transition = 'stroke-dashoffset ' + item.dur.toFixed(2) + 's linear';
+        item.path.style.transitionDelay = t.toFixed(2) + 's';
+        item.path.style.strokeDashoffset = '0';
+        t += item.dur * 0.85;
+      });
+      statusEl.textContent = 'Preview · ' + strokes.length + ' Striche · ~' + total.toFixed(1) + 's';
+    });
+  }
+
+  function buildExport() {
+    var payload = {
+      viewBox: [0, 0, VB_W, VB_H],
+      unit: 'px',
+      strokes: strokes.map(function (s, i) {
+        return {
+          id: 'stroke-' + (i + 1),
+          width: s.width,
+          d: pointsToPath(s.points),
+          points: s.points
+        };
+      })
+    };
+    var svgPaths = strokes.map(function (s) {
+      return '  <path d="' + pointsToPath(s.points) + '" fill="none" stroke="#fff" stroke-width="' + s.width + '" stroke-linecap="round" stroke-linejoin="round"/>';
+    }).join('\n');
+    payload.svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VB_W + ' ' + VB_H + '" fill="none">\n' +
+      svgPaths + '\n</svg>';
+    return payload;
+  }
+
+  stage.addEventListener('pointerdown', function (e) {
+    if (mode !== 'draw') return;
+    stage.setPointerCapture(e.pointerId);
+    drawing = true;
+    currentPoints = [pointerToSvg(e)];
+    activeIndex = strokes.length;
+    renderDraw();
+    statusEl.textContent = 'Zeichne…';
+  });
+
+  stage.addEventListener('pointermove', function (e) {
+    if (!drawing || mode !== 'draw') return;
+    currentPoints.push(pointerToSvg(e));
+    currentPoints = simplify(currentPoints, 3);
+    renderDraw();
+  });
+
+  function endStroke() {
+    if (!drawing) return;
+    drawing = false;
+    var pts = simplify(currentPoints, 4);
+    currentPoints = [];
+    if (pts.length > 1) {
+      strokes.push({ points: pts, width: strokeWidth });
+      activeIndex = strokes.length - 1;
+      statusEl.textContent = 'Strich ' + strokes.length + ' gespeichert';
+    } else {
+      statusEl.textContent = 'Strich zu kurz — verworfen';
+    }
+    renderList();
+    renderDraw();
+  }
+
+  stage.addEventListener('pointerup', endStroke);
+  stage.addEventListener('pointercancel', endStroke);
+
+  document.getElementById('btn-draw').addEventListener('click', function () { setMode('draw'); });
+  document.getElementById('btn-preview').addEventListener('click', function () { setMode('preview'); });
+  document.getElementById('btn-undo').addEventListener('click', function () {
+    if (!strokes.length) return;
+    strokes.pop();
+    activeIndex = strokes.length - 1;
+    renderList();
+    renderDraw();
+  });
+  document.getElementById('btn-clear').addEventListener('click', function () {
+    if (!strokes.length) return;
+    if (!confirm('Alle Striche löschen?')) return;
+    strokes = [];
+    activeIndex = -1;
+    renderList();
+    renderDraw();
+  });
+
+  widthInput.addEventListener('input', function () {
+    strokeWidth = parseInt(widthInput.value, 10);
+    widthVal.textContent = String(strokeWidth);
+    if (activeIndex >= 0 && strokes[activeIndex]) {
+      strokes[activeIndex].width = strokeWidth;
+      renderDraw();
+    }
+  });
+  guideInput.addEventListener('input', function () {
+    guideVal.textContent = guideInput.value;
+    guide.style.opacity = String(parseInt(guideInput.value, 10) / 100);
+  });
+
+  document.getElementById('btn-export').addEventListener('click', function () {
+    var payload = buildExport();
+    var text = JSON.stringify(payload, null, 2);
+    exportOut.value = text;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        statusEl.textContent = 'JSON kopiert — kannst du mir schicken';
+      }).catch(function () {
+        statusEl.textContent = 'JSON unten markieren & kopieren';
+      });
+    } else {
+      exportOut.focus();
+      exportOut.select();
+      statusEl.textContent = 'JSON unten markieren & kopieren';
+    }
+  });
+
+  document.getElementById('btn-svg').addEventListener('click', function () {
+    var payload = buildExport();
+    var blob = new Blob([payload.svg], { type: 'image/svg+xml' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'lp-draw-paths.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+    exportOut.value = payload.svg;
+    statusEl.textContent = 'SVG heruntergeladen';
+  });
+
+  // restore draft
+  try {
+    var saved = localStorage.getItem('lp-draw-editor-draft');
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.strokes)) {
+        strokes = parsed.strokes.map(function (s) {
+          return { points: s.points || [], width: s.width || 28 };
+        }).filter(function (s) { return s.points.length > 1; });
+        activeIndex = strokes.length - 1;
+      }
+    }
+  } catch (err) {}
+
+  window.setInterval(function () {
+    try {
+      localStorage.setItem('lp-draw-editor-draft', JSON.stringify({ strokes: strokes }));
+    } catch (err) {}
+  }, 1500);
+
+  renderList();
+  renderDraw();
+  setMode('draw');
+})();
+  </script>
+</body>
+</html>

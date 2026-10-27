@@ -1,0 +1,35 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Local deploy scratch
+/tmp/
+.deploy/
+
+# Debug / WIP assets (not production)
+assets/_lp-*
+assets/_sig-*
+assets/*-prev.jpg
+assets/*-orig.jpg
+assets/hero-suggest-*.jpg
+assets/lp-draw-*
+assets/lp-reveal-*
+assets/logo-lp-vector.svg
+assets/about-signature-strokes.svg
+assets/about-signature.svg
+assets/about-bg.jpg
+assets/about-me.jpg
+
+# Large source / unused
+Logo.ai
+luca.jpeg
+*.ai
+

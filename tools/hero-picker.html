@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hero — Blaupausen &amp; Pläne</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 28px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    p { color: #aaa; margin: 0 0 24px; font-size: 14px; max-width: 54em; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card.current { border-color: #B38B45; }
+    .card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      background: #000;
+    }
+    .meta { padding: 14px 16px 16px; }
+    .meta strong { display: block; margin-bottom: 4px; }
+    .meta span { color: #999; font-size: 13px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <h1>Blaupausen &amp; Pläne</h1>
+  <p>Weniger Werkstatt, mehr Zeichnungen / Grundrisse / Blueprints. Sag mir die Nummer (1–6).</p>
+  <div class="grid">
+    <article class="card current">
+      <img src="../assets/hero-suggest-current.jpg?v=10" alt="Aktuell">
+      <div class="meta">
+        <strong>Aktuell</strong>
+        <span>Werkzeug + Skizzenwand — zum Vergleich.</span>
+      </div>
+    </article>
+    <article class="card">
+      <img src="../assets/hero-suggest-1.jpg?v=10" alt="1">
+      <div class="meta">
+        <strong>1 — Klassische Blaupause</strong>
+        <span>Cyan-Blueprint, Grundriss, rein grafisch.</span>
+      </div>
+    </article>
+    <article class="card">
+      <img src="../assets/hero-suggest-2.jpg?v=10" alt="2">
+      <div class="meta">
+        <strong>2 — Plan-Stapel</strong>
+        <span>Viele Grundrisse übereinander, dunkel-holz.</span>
+      </div>
+    </article>
+    <article class="card">
+      <img src="../assets/hero-suggest-3.jpg?v=10" alt="3">
+      <div class="meta">
+        <strong>3 — Schreibtisch + Pläne</strong>
+        <span>Strukturzeichnungen, Lampe, Lineal — Studio.</span>
+      </div>
+    </article>
+    <article class="card">
+      <img src="../assets/hero-suggest-4.jpg?v=10" alt="4">
+      <div class="meta">
+        <strong>4 — Maßstab auf Grundriss</strong>
+        <span>Architekturplan, Maßstabslineal, dunkler Tisch.</span>
+      </div>
+    </article>
+    <article class="card">
+      <img src="../assets/hero-suggest-5.jpg?v=10" alt="5">
+      <div class="meta">
+        <strong>5 — Grundriss Detail</strong>
+        <span>Floorplan nah, Maßband &amp; Stift — wenig Werkstatt.</span>
+      </div>
+    </article>
+    <article class="card">
+      <img src="../assets/hero-suggest-6.jpg?v=10" alt="6">
+      <div class="meta">
+        <strong>6 — Skizzen + Entwürfe</strong>
+        <span>Notizbuch, Zeichnungen, Entwurfsarbeit am Tisch.</span>
+      </div>
+    </article>
+  </div>
+</body>
+</html>
