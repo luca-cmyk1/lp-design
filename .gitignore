@@ -4,6 +4,7 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+~*
 
 # Env / secrets
 .env
@@ -13,8 +14,14 @@ Thumbs.db
 # Local deploy scratch
 /tmp/
 .deploy/
+tools/
 
 # Debug / WIP assets (not production)
+assets/_dbg*
+assets/_debug*
+assets/_preview*
+assets/_vf*
+assets/_titelbild*
 assets/_lp-*
 assets/_sig-*
 assets/*-prev.jpg
@@ -32,4 +39,13 @@ assets/about-me.jpg
 Logo.ai
 luca.jpeg
 *.ai
+*.psd
+titelbild.png
+titelbild.psd
+assets/titelbild.png
+assets/titelbild-1.png
+assets/titelbild-2.png
+assets/titelbild-3.png
+assets/titelbild-blank.png
+assets/statement-bg.jpg
 

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /tools/
+Disallow: /assets/_dbg
+Disallow: /assets/_debug
+Disallow: /assets/_preview
+Disallow: /assets/_vf
+
+Sitemap: https://lp-design.ch/sitemap.xml

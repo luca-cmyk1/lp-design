@@ -1,16 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Start-Sequenz: Schwarz → LP → Bild klein → Bild voll → UI
-  var INTRO_ENABLED = true;
+  var INTRO_ENABLED = false;
   var hero = document.querySelector('.hero');
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var introDone = false;
 
-  var logoEl = document.querySelector('.hero-logo');
-
-  var settleLogo = function () {
-    if (!logoEl) return;
-    logoEl.classList.add('is-drawn');
+  // Hero: volles Viewport, dann leichte Hochzieh-Animation
+  var settleHero = function () {
+    if (!hero || hero.classList.contains('is-settled')) return;
+    hero.classList.add('is-settled');
   };
+  if (reduceMotion) {
+    settleHero();
+  } else {
+    window.requestAnimationFrame(function () {
+      window.setTimeout(settleHero, 420);
+    });
+  }
 
   var lockIntroScroll = function (e) {
     if (!introDone) {
@@ -30,10 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   var finishIntro = function () {
     if (!hero || introDone) return;
-    settleLogo();
-    // Ready zuerst: Bild bleibt im Expand-Endzustand, dann erst Scroll/UI freigeben
     hero.classList.add('is-ready');
-    hero.classList.remove('is-intro-logo', 'is-intro-expand');
     introDone = true;
     document.documentElement.classList.remove('is-intro');
     document.body.classList.remove('is-intro');
@@ -50,9 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!INTRO_ENABLED || reduceMotion || !hero) {
     if (hero) {
-      hero.classList.add('is-intro-expand', 'is-ready');
+      hero.classList.add('is-ready');
     }
-    settleLogo();
     document.documentElement.classList.remove('is-intro');
     document.body.classList.remove('is-intro');
     introDone = true;
@@ -64,12 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('wheel', lockIntroScroll, { passive: false, capture: true });
     window.addEventListener('touchmove', lockIntroScroll, { passive: false, capture: true });
     window.addEventListener('keydown', lockIntroKeys, { capture: true });
-    // Schwarz → LP + Bild sofort parallel aufbauen
-    window.setTimeout(function () {
-      settleLogo();
-      hero.classList.add('is-intro-logo', 'is-intro-expand');
-      window.setTimeout(finishIntro, 1250);
-    }, 20);
+    window.setTimeout(finishIntro, 400);
   }
 
   // Leicht weicheres / langsameres Scrollen (ganz subtil)
@@ -91,8 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sanftes Scrollen zu Abschnitten
   var easeInOutCubic = function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
   var smoothScrollTo = function (targetY, duration) {
+    var ms = duration || 1350;
     if (lenis) {
-      lenis.scrollTo(targetY, { duration: (duration || 1350) / 1000 });
+      lenis.scrollTo(targetY, { duration: ms / 1000 });
       return;
     }
     var startY = window.scrollY;
@@ -100,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var startTime = null;
     var step = function (timestamp) {
       if (startTime === null) startTime = timestamp;
-      var progress = Math.min((timestamp - startTime) / duration, 1);
+      var progress = Math.min((timestamp - startTime) / ms, 1);
       window.scrollTo(0, startY + distance * easeInOutCubic(progress));
       if (progress < 1) window.requestAnimationFrame(step);
     };
@@ -123,8 +121,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Scroll-Reveal
   var revealEls = document.querySelectorAll('.reveal');
-  var workItems = document.querySelectorAll('.photo-strip-item');
-  var workTitle = document.querySelector('.work-strip-word');
+  var workItems = document.querySelectorAll('.project-card');
+  var workTitles = Array.prototype.slice.call(document.querySelectorAll('.work-strip-title'));
+  var workKicker = document.querySelector('.work-strip-kicker');
+  var whyKicker = document.querySelector('.why-block-kicker');
+  var whyGrid = document.querySelector('.why-grid');
+  var runTypewriter = function (el, speed) {
+    if (!el || el.dataset.typed === '1') return;
+    var full = el.getAttribute('data-typewriter') || (el.textContent || '').trim();
+    el.setAttribute('data-typewriter', full);
+    el.dataset.typed = '1';
+    el.classList.add('is-visible');
+    if (reduceMotion) {
+      el.textContent = full;
+      el.classList.add('is-typed');
+      return;
+    }
+    el.textContent = '';
+    el.classList.add('is-typing');
+    var i = 0;
+    var step = function () {
+      i += 1;
+      el.textContent = full.slice(0, i);
+      if (i < full.length) {
+        window.setTimeout(step, speed || 42);
+      } else {
+        el.classList.remove('is-typing');
+        el.classList.add('is-typed');
+      }
+    };
+    window.setTimeout(step, 80);
+  };
+  var showKickerAfter = function (titleEl) {
+    var kicker = null;
+    if (titleEl.classList.contains('why-block-title')) kicker = whyKicker;
+    else kicker = workKicker;
+    if (!kicker) return;
+    window.setTimeout(function () {
+      runTypewriter(kicker, kicker === whyKicker ? 38 : 48);
+    }, reduceMotion ? 0 : 280);
+  };
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
@@ -136,22 +172,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     revealEls.forEach(function (el) { io.observe(el); });
 
-    if (workItems.length || workTitle) {
+    if (workItems.length) {
+      var workList = Array.prototype.slice.call(workItems);
       var workIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var index = workList.indexOf(entry.target);
+          if (index < 0) return;
+          var rowStart = Math.floor(index / 2) * 2;
+          [rowStart, rowStart + 1].forEach(function (i) {
+            var card = workList[i];
+            if (!card || card.classList.contains('is-visible')) return;
+            card.classList.add('is-visible');
+            workIo.unobserve(card);
+          });
+        });
+      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+      workList.forEach(function (el) { workIo.observe(el); });
+    }
+    if (workTitles.length) {
+      var workTitleIo = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
-            workIo.unobserve(entry.target);
+            workTitleIo.unobserve(entry.target);
+            showKickerAfter(entry.target);
           }
         });
-      }, { threshold: 0.08, rootMargin: '20% 0px 15% 0px' });
-      workItems.forEach(function (el) { workIo.observe(el); });
-      if (workTitle) workIo.observe(workTitle);
+      }, { threshold: 0.4, rootMargin: '0px 0px -22% 0px' });
+      workTitles.forEach(function (el) { workTitleIo.observe(el); });
+    }
+    if (whyGrid) {
+      var whyGridIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            whyGridIo.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.2, rootMargin: '0px 0px -10% 0px' });
+      whyGridIo.observe(whyGrid);
     }
   } else {
     revealEls.forEach(function (el) { el.classList.add('in-view'); });
     workItems.forEach(function (el) { el.classList.add('is-visible'); });
-    if (workTitle) workTitle.classList.add('is-visible');
+    workTitles.forEach(function (el) { el.classList.add('is-visible'); });
+    runTypewriter(workKicker, 48);
+    runTypewriter(whyKicker, 38);
+    if (whyGrid) whyGrid.classList.add('is-visible');
+  }
+
+  // Über mich: Zoom einmal triggern, dann durchziehen
+  var aboutMedia = document.getElementById('about-media');
+  if (aboutMedia) {
+    if (reduceMotion) {
+      aboutMedia.classList.add('is-zoomed-out');
+    } else if ('IntersectionObserver' in window) {
+      var aboutZoomIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          aboutMedia.classList.add('is-zoomed-out');
+          aboutZoomIo.unobserve(entry.target);
+        });
+      }, { threshold: 0.35, rootMargin: '0px 0px -8% 0px' });
+      aboutZoomIo.observe(aboutMedia);
+    } else {
+      aboutMedia.classList.add('is-zoomed-out');
+    }
   }
 
   // Parallax: Elemente mit data-parallax bewegen sich langsamer/schneller als der Scroll
@@ -207,37 +294,14 @@ document.addEventListener('DOMContentLoaded', () => {
     syncScrollHint();
   }
 
-  // Header-Parallax: Hintergrundfoto hinkt dem Scroll nach, Titel-Schrift läuft dagegen
+  // Header: Bild-Parallax + schlichter Screen-Crossfade
   var heroBg = document.querySelector('.hero-bg');
-  var heroLogo = document.querySelector('.hero-logo');
-  var heroTitleText = document.querySelector('.hero-title-text');
-  var heroIntroText = document.querySelector('.hero-intro-text');
-  var heroSkillsBlock = document.querySelector('.hero-skills-block');
-  if (hero && (heroBg || heroLogo || heroTitleText || heroIntroText || heroSkillsBlock) && !reduceMotion) {
+  if (hero && heroBg && !reduceMotion) {
     var rafHero = null;
     var updateHeroParallax = function () {
       if (!introDone) return;
       var heroTop = hero.getBoundingClientRect().top;
-      if (heroBg) {
-        var bgOffset = heroTop * -0.3;
-        heroBg.style.transform = 'translate3d(0, ' + bgOffset.toFixed(1) + 'px, 0)';
-      }
-      if (heroLogo) {
-        var logoOffset = heroTop * 0.08;
-        heroLogo.style.transform = 'translate3d(-50%, calc(-50% + ' + logoOffset.toFixed(1) + 'px), 0)';
-      }
-      if (heroTitleText) {
-        var titleOffset = heroTop * 0.18;
-        heroTitleText.style.transform = 'translate3d(0, ' + titleOffset.toFixed(1) + 'px, 0)';
-      }
-      if (heroIntroText) {
-        var introOffset = heroTop * 0.18;
-        heroIntroText.style.transform = 'translate3d(0, ' + introOffset.toFixed(1) + 'px, 0)';
-      }
-      if (heroSkillsBlock) {
-        var skillsOffset = heroTop * 0.18;
-        heroSkillsBlock.style.transform = 'translate3d(0, ' + skillsOffset.toFixed(1) + 'px, 0)';
-      }
+      heroBg.style.transform = 'translate3d(0, ' + (heroTop * -0.25).toFixed(1) + 'px, 0)';
       rafHero = null;
     };
     var onHeroScroll = function () {
@@ -245,64 +309,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     window.addEventListener('scroll', onHeroScroll, { passive: true });
     window.addEventListener('resize', onHeroScroll);
-    if (lenis && typeof lenis.on === 'function') {
-      lenis.on('scroll', onHeroScroll);
-    }
+    if (lenis && typeof lenis.on === 'function') lenis.on('scroll', onHeroScroll);
     updateHeroParallax();
   }
 
-  // Statement: von unten rein wie Header-Titel (scrollgekoppelt)
-  var statementBlock = document.getElementById('statement-block');
-  if (statementBlock && !reduceMotion) {
-    var rafStatement = null;
-    var updateStatementRise = function () {
-      var top = statementBlock.getBoundingClientRect().top;
-      var vh = window.innerHeight || 800;
-      var settle = vh * 0.34;
-      var offset = (top - settle) * 0.2;
-      if (offset > 140) offset = 140;
-      if (offset < -36) offset = -36;
-      var fade = 1 - (top - settle) / (vh * 0.55);
-      if (fade < 0) fade = 0;
-      if (fade > 1) fade = 1;
-      statementBlock.style.transform = 'translate3d(0, ' + offset.toFixed(1) + 'px, 0)';
-      statementBlock.style.opacity = fade.toFixed(3);
-      rafStatement = null;
-    };
-    var onStatementScroll = function () {
-      if (!rafStatement) rafStatement = window.requestAnimationFrame(updateStatementRise);
-    };
-    window.addEventListener('scroll', onStatementScroll, { passive: true });
-    window.addEventListener('resize', onStatementScroll);
-    if (lenis && typeof lenis.on === 'function') {
-      lenis.on('scroll', onStatementScroll);
-    }
-    updateStatementRise();
-  } else if (statementBlock) {
-    statementBlock.style.opacity = '1';
-    statementBlock.style.transform = 'none';
-  }
+  var heroScreens = Array.prototype.slice.call(document.querySelectorAll('.hero-screen'));
+  if (heroScreens.length > 1 && !reduceMotion) {
+    var slideIndex = 0;
+    var slideBusy = false;
+    var swapHeroScreen = function () {
+      if (slideBusy) return;
+      var current = heroScreens[slideIndex];
+      var nextIndex = (slideIndex + 1) % heroScreens.length;
+      var next = heroScreens[nextIndex];
+      slideBusy = true;
 
-  // About-Hintergrund: gleicher sanfter Parallax wie Header
-  var aboutSection = document.querySelector('.about-feature');
-  var aboutBg = document.querySelector('.about-feature-bg');
-  if (aboutSection && aboutBg && !reduceMotion) {
-    var rafAbout = null;
-    var updateAboutParallax = function () {
-      var aboutTop = aboutSection.getBoundingClientRect().top;
-      var bgOffset = aboutTop * -0.1;
-      aboutBg.style.transform = 'translate3d(0, ' + bgOffset.toFixed(1) + 'px, 0)';
-      rafAbout = null;
+      next.classList.remove('is-active', 'is-leaving');
+      current.classList.remove('is-active');
+      current.classList.add('is-leaving');
+      next.classList.add('is-active');
+
+      window.setTimeout(function () {
+        current.classList.remove('is-leaving');
+        slideIndex = nextIndex;
+        slideBusy = false;
+      }, 1100);
     };
-    var onAboutScroll = function () {
-      if (!rafAbout) rafAbout = window.requestAnimationFrame(updateAboutParallax);
-    };
-    window.addEventListener('scroll', onAboutScroll, { passive: true });
-    window.addEventListener('resize', onAboutScroll);
-    if (lenis && typeof lenis.on === 'function') {
-      lenis.on('scroll', onAboutScroll);
-    }
-    updateAboutParallax();
+    window.setInterval(swapHeroScreen, 4800);
   }
 
   // Custom cursor + soft follower (Eliot-Referenz)
@@ -334,11 +367,61 @@ document.addEventListener('DOMContentLoaded', () => {
       cursorDot.classList.remove('is-on');
     });
     document.querySelectorAll('a, button, [data-cursor="hover"]').forEach(function (el) {
+      if (el.getAttribute('data-cursor') === 'visit') return;
       el.addEventListener('mouseenter', function () { cursor.classList.add('is-hover'); });
       el.addEventListener('mouseleave', function () { cursor.classList.remove('is-hover'); });
     });
+    var cursorName = cursor.querySelector('.site-cursor-name');
+    var visitOutTimer = null;
+    document.querySelectorAll('[data-cursor="visit"]').forEach(function (el) {
+      el.addEventListener('mouseenter', function () {
+        if (visitOutTimer) {
+          clearTimeout(visitOutTimer);
+          visitOutTimer = null;
+        }
+        if (cursorName) cursorName.textContent = el.getAttribute('data-cursor-name') || '';
+        cursor.classList.add('is-visit');
+        cursor.classList.remove('is-hover');
+        cursorDot.classList.add('is-visit-hidden');
+      });
+      el.addEventListener('mouseleave', function () {
+        // Morph zurück zum normalen Ring (Base-Styles + langsamere Transition)
+        cursor.classList.remove('is-visit');
+        if (visitOutTimer) clearTimeout(visitOutTimer);
+        visitOutTimer = setTimeout(function () {
+          cursorDot.classList.remove('is-visit-hidden');
+          visitOutTimer = null;
+        }, 520);
+      });
+    });
   } else {
     document.body.classList.add('has-native-cursor');
+  }
+
+  // Topbar: hell auf dunklem Grund, dunkel auf hellem Grund (LP bleibt immer weiss)
+  var topbar = document.getElementById('site-topbar');
+  var aboutSection = document.getElementById('ueber-mich');
+  var contactSection = document.getElementById('kontakt');
+  if (topbar) {
+    var darkSections = [hero, aboutSection, contactSection].filter(Boolean);
+    var syncTopbar = function () {
+      var sampleY = 40;
+      var overDark = darkSections.some(function (section) {
+        var rect = section.getBoundingClientRect();
+        return rect.top < sampleY && rect.bottom > sampleY;
+      });
+      var isLight = !overDark;
+      if (topbar) {
+        topbar.classList.toggle('is-light', isLight);
+        topbar.classList.remove('is-scrolling');
+      }
+    };
+    window.addEventListener('scroll', syncTopbar, { passive: true });
+    window.addEventListener('resize', syncTopbar);
+    if (lenis && typeof lenis.on === 'function') {
+      lenis.on('scroll', syncTopbar);
+    }
+    syncTopbar();
   }
 
   // Footer: Hover öffnet; Tippen toggelt (Touch)
@@ -354,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Kontaktformular
   var contactForm = document.getElementById('contact-form');
   if (contactForm) {
-    var CONTACT_EMAIL = '[DEINE E-MAIL]';
+    var CONTACT_EMAIL = 'info@lp-design.ch';
 
     var showError = function (field, message) {
       var input = contactForm.elements[field];
@@ -390,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       var subject = 'Projektanfrage von ' + name;
-      var body = message + '\n\n— ' + name + ' (' + email + ')';
+      var body = message + '\n\n' + name + ' (' + email + ')';
       status.textContent = 'Öffnet dein E-Mail-Programm …';
       window.location.href = 'mailto:' + CONTACT_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
     });
